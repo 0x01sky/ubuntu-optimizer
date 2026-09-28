@@ -11,7 +11,7 @@ check_network(){
   echo -e "\e[1;32m Checking Connectivity... ! \e[0m"
 
   wget -q --spider https://duckduckgo.com/
-  
+
   if [ $? -eq  0 ]; then
     return
   else
@@ -37,24 +37,24 @@ update(){
 }
 
 remove_snap(){
-  
+
   echo -e "\e[1;32m Removing Snaps... \e[0m"
   for snap in $(snap list | awk 'NR > 1 && $1 !~ /^(core24|bare|core22|snapd)$/ {print $1}'); do
     sudo snap remove "$snap"
   done
- 
+
   echo -e "\e[1;32m Removing Snap Daemon and disabling it services ... \e[0m"
-  
+
   if systemctl cat snapd.service &>/dev/null; then
     sudo systemctl disable --now snapd.service
     sudo systemctl disable --now snapd.socket
   else
     return
   fi
-  
+
   if command -v snapd &>/dev/null;
     apt remove snapd -y
-    rm -rf ~/snap 
+    rm -rf ~/snap
     rm -rf /var/lib/snapd
     sudo find /etc -name "*snap*" -exec rm -rf {} \;
   else
@@ -72,7 +72,7 @@ EOF
 }
 
 remove_telemetry(){
-  
+
   PRO=$(grep -o "LTS" /etc/os-release | uniq)
   echo -e "\e[1;32m Disabling telemetry services... \e[0m"
 
@@ -80,13 +80,13 @@ remove_telemetry(){
     systemctl disable --now apport.service
   else
     return
-  fi 
+  fi
 
   if systemctl cat whoopsie.service &>/dev/null; then
     systemctl mask whoopsie.service
   else
     return
-  fi 
+  fi
 
   if systemctl cat motd-news.timer &>/dev/null; then
     systemctl disable --now motd-news.timer
@@ -96,15 +96,15 @@ remove_telemetry(){
   fi
 
   echo -e "\e[1;32m Removing bloatware.. \e[0m"
-  
+
   if command -v apport whoopsie ubuntu-report &>/dev/null; then
     apt purge -y apport whoopsie ubuntu-report
   else
     return
   fi
-  
+
   if [ $PRO == "LTS" ]; then
-    apt remove ubuntu-pro-client -y 
+    apt remove ubuntu-pro-client -y
   else
     return
   fi
@@ -132,12 +132,12 @@ EOF
 
 firewall(){
   echo -e "\e[1;32m Configuring firewall... \e[0m"
-  
+
   if command -v ufw &>/dev/null; then
     apt install -y ufw
   else
     return
-  fi 
+  fi
 
   ufw default deny incoming
   ufw default allow outgoing
@@ -147,11 +147,11 @@ firewall(){
 
 disable_ipv6(){
   echo -e "\e[1;32m Disabling IPv6... \e[0m"
-  
+
   sysctl -w net.ipv6.conf.all.disable_ipv6=1
   sysctl -w net.ipv6.conf.default.disable_ipv6=1
-  
-  if ! grep -i "ipv6" /etc/sysctl.conf; then
+
+  if [ -e /etc/sysctl.conf ]; then
     echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
     echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
   else
@@ -161,25 +161,25 @@ disable_ipv6(){
 
 auditing(){
   echo -e "\e[1;32m Enabling process accounting... \e[0m"
-  
+
   if command -v auditd &>/dev/null; then
     apt install -y auditd
   else
     return
-  fi 
+  fi
 
   systemctl enable --now auditd
 }
 
 fail2ban(){
   echo -e "\e[1;32m Installing Fail2Ban... \e[0m"
-  
+
   if command -v fail2ban &>/dev/null; then
     apt install -y fail2ban
   else
     return
   fi
-    
+
   systemctl enable --now fail2ban
 }
 
@@ -218,5 +218,3 @@ main(){
 main
 
 echo -e "\e[1;32m Successfully Debloated Ubuntu! Ubuntu is great again ! Reboot your system using "reboot" !\e[0m"
-
-
